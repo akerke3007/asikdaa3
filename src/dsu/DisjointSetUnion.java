@@ -1,52 +1,77 @@
 package dsu;
 
-public class DisjointSetUnion {
+import graph.Metrics;
+
+public final class DisjointSetUnion {
     private final int[] parent;
-    private final int[] rank;
-    private long operationCount;
+    private final int[] size;
+    private final Metrics metrics;
+    private int components;
 
-    public DisjointSetUnion(int n) {
-        parent = new int[n];
-        rank = new int[n];
-        operationCount = 0;
-        for (int i = 0; i < n; i++) {
+    public DisjointSetUnion(int vertices) {
+        this(vertices, new Metrics());
+    }
+
+    public DisjointSetUnion(int vertices, Metrics metrics) {
+        if (vertices < 1) {
+            throw new IllegalArgumentException("DSU size must be positive.");
+        }
+        this.metrics = metrics;
+        parent = new int[vertices];
+        size = new int[vertices];
+        components = vertices;
+        for (int i = 0; i < vertices; i++) {
             parent[i] = i;
-            rank[i] = 0;
+            size[i] = 1;
         }
     }
 
-    public int find(int i) {
-        operationCount++;
-        if (parent[i] == i) {
-            return i;
+    public int find(int vertex) {
+        if (vertex < 0 || vertex >= parent.length) {
+            throw new IllegalArgumentException("Invalid DSU vertex.");
         }
-        return parent[i] = find(parent[i]);
-    }
-
-    public boolean union(int i, int j) {
-        operationCount++;
-        int rootI = find(i);
-        int rootJ = find(j);
-
-        if (rootI != rootJ) {
-            if (rank[rootI] < rank[rootJ]) {
-                parent[rootI] = rootJ;
-            } else if (rank[rootI] > rank[rootJ]) {
-                parent[rootJ] = rootI;
-            } else {
-                parent[rootJ] = rootI;
-                rank[rootI]++;
+        metrics.findCalls++;
+        int root = vertex;
+        while (root != parent[root]) {
+            root = parent[root];
+            metrics.parentTraversals++;
+        }
+        while (vertex != root) {
+            int next = parent[vertex];
+            if (parent[vertex] != root) {
+                parent[vertex] = root;
+                metrics.parentUpdates++;
             }
-            return true;
+            vertex = next;
+            metrics.parentTraversals++;
         }
-        return false;
+        return root;
     }
 
-    public long getOperationCount() {
-        return operationCount;
+    public boolean union(int first, int second) {
+        metrics.unionCalls++;
+        int a = find(first);
+        int b = find(second);
+        if (a == b) {
+            return false;
+        }
+        if (size[a] < size[b]) {
+            int temporary = a;
+            a = b;
+            b = temporary;
+        }
+        parent[b] = a;
+        size[a] += size[b];
+        metrics.parentUpdates++;
+        components--;
+        return true;
     }
 
-    public void resetOperations() {
-        operationCount = 0;
+    public int components() {
+        return components;
+    }
+
+    public Metrics metrics() {
+        return metrics;
     }
 }
