@@ -1,65 +1,91 @@
 package shortestpath;
 
 import graph.Edge;
-import java.util.*;
+import graph.Graph;
+import graph.Metrics;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.PriorityQueue;
 
-public class DijkstraSP {
-    private double[] distTo;
-    private int[] edgeTo;
-    private PriorityQueue<Node> pq;
-    private long operationCount;
+public final class DijkstraSP {
+    private record Node(int vertex, double distance) {}
 
-    private static class Node implements Comparable<Node> {
-        int vertex;
-        double distance;
+    public static final class Result {
+        private final double[] distances;
+        private final int[] previous;
+        private final Metrics metrics;
 
-        Node(int vertex, double distance) {
-            this.vertex = vertex;
-            this.distance = distance;
+        private Result(double[] distances, int[] previous, Metrics metrics) {
+            this.distances = distances;
+            this.previous = previous;
+            this.metrics = metrics;
         }
 
-        @Override
-        public int compareTo(Node other) {
-            return Double.compare(this.distance, other.distance);
+        public double distanceTo(int vertex) {
+            return distances[vertex];
+        }
+
+        public List<Integer> pathTo(int vertex) {
+            if (Double.isInfinite(distances[vertex])) {
+                return List.of();
+            }
+            List<Integer> path = new ArrayList<>();
+            for (int current = vertex; current != -1; current = previous[current]) {
+                path.add(current);
+            }
+            Collections.reverse(path);
+            return List.copyOf(path);
+        }
+
+        public Metrics metrics() {
+            return metrics;
         }
     }
 
-    public void compute(int vertices, List<List<Edge>> adj, int source) {
-        distTo = new double[vertices];
-        edgeTo = new int[vertices];
-        Arrays.fill(distTo, Double.POSITIVE_INFINITY);
-        Arrays.fill(edgeTo, -1);
-        distTo[source] = 0.0;
-
-        pq = new PriorityQueue<>();
-        pq.add(new Node(source, 0.0));
-        operationCount = 0;
-
-        while (!pq.isEmpty()) {
-            Node current = pq.poll();
-            int u = current.vertex;
-            operationCount++;
-
-            if (current.distance > distTo[u]) continue;
-
-            for (Edge edge : adj.get(u)) {
-                operationCount++;
-                int v = edge.getDestination();
-                double weight = edge.getWeight();
-
-                if (weight < 0) {
-                    throw new IllegalArgumentException("Dijkstra's algorithm does not support negative edge weights.");
+    public Result compute(Graph graph, int source) {
+        graph.checkVertex(source);
+        Metrics metrics = new Metrics();
+        for (Edge edge : graph.edges()) {
+            metrics.validationEdges++;
+            if (edge.weight() < 0) {
+                throw new IllegalArgumentException("Dijkstra needs non-negative weights.");
+            }
+        }
+        double[] distances = new double[graph.vertices()];
+        int[] previous = new int[graph.vertices()];
+        Arrays.fill(distances, Double.POSITIVE_INFINITY);
+        Arrays.fill(previous, -1);
+        distances[source] = 0;
+        PriorityQueue<Node> queue = new PriorityQueue<>((first, second) -> {
+            metrics.comparisons++;
+            return Double.compare(first.distance(), second.distance());
+        });
+        queue.add(new Node(source, 0));
+        metrics.queueOffers++;
+        while (!queue.isEmpty()) {
+            Node current = queue.poll();
+            metrics.queuePolls++;
+            if (current.distance() != distances[current.vertex()]) {
+                continue;
+            }
+            metrics.vertexVisits++;
+            for (Edge edge : graph.neighbors(current.vertex())) {
+                metrics.edgeExaminations++;
+                double candidate = current.distance() + edge.weight();
+                if (!Double.isFinite(candidate)) {
+                    throw new ArithmeticException("Path distance exceeds the double range.");
                 }
-
-                if (distTo[u] + weight < distTo[v]) {
-                    distTo[v] = distTo[u] + weight;
-                    edgeTo[v] = u;
-                    pq.add(new Node(v, distTo[v]));
+                if (candidate < distances[edge.destination()]) {
+                    distances[edge.destination()] = candidate;
+                    previous[edge.destination()] = current.vertex();
+                    queue.add(new Node(edge.destination(), candidate));
+                    metrics.queueOffers++;
+                    metrics.relaxations++;
                 }
             }
         }
+        return new Result(distances, previous, metrics);
     }
-
-    public double[] getDistTo() { return distTo; }
-    public long getOperationCount() { return operationCount; }
 }
