@@ -1,70 +1,84 @@
 package connectivity;
 
-import java.util.*;
+import graph.Edge;
+import graph.Graph;
+import graph.Metrics;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
-public class KosarajuSCC {
-    private long operationCount;
+public final class KosarajuSCC {
+    public record Result(List<List<Integer>> components, Metrics metrics) {
+        public Result {
+            components = components.stream().map(List::copyOf).toList();
+        }
+    }
 
-    public List<List<Integer>> findSCCs(int vertices, List<List<Integer>> adj) {
-        operationCount = 0;
-        Stack<Integer> stack = new Stack<>();
-        boolean[] visited = new boolean[vertices];
-
-        for (int i = 0; i < vertices; i++) {
-            if (!visited[i]) {
-                fillOrder(i, visited, stack, adj);
+    public Result compute(Graph graph) {
+        if (!graph.directed()) {
+            throw new IllegalArgumentException("SCC needs a directed graph.");
+        }
+        Metrics metrics = new Metrics();
+        boolean[] visited = new boolean[graph.vertices()];
+        int[] nextEdge = new int[graph.vertices()];
+        List<Integer> finish = new ArrayList<>();
+        ArrayDeque<Integer> stack = new ArrayDeque<>();
+        for (int start = 0; start < graph.vertices(); start++) {
+            if (visited[start]) {
+                continue;
+            }
+            visited[start] = true;
+            metrics.vertexVisits++;
+            stack.push(start);
+            while (!stack.isEmpty()) {
+                int vertex = stack.peek();
+                List<Edge> neighbors = graph.neighbors(vertex);
+                if (nextEdge[vertex] == neighbors.size()) {
+                    finish.add(stack.pop());
+                } else {
+                    int next = neighbors.get(nextEdge[vertex]++).destination();
+                    metrics.edgeExaminations++;
+                    if (!visited[next]) {
+                        visited[next] = true;
+                        metrics.vertexVisits++;
+                        stack.push(next);
+                    }
+                }
             }
         }
-
-        List<List<Integer>> transpose = getTranspose(vertices, adj);
-
+        List<List<Integer>> reverse = new ArrayList<>();
+        for (int i = 0; i < graph.vertices(); i++) {
+            reverse.add(new ArrayList<>());
+        }
+        for (Edge edge : graph.edges()) {
+            reverse.get(edge.destination()).add(edge.source());
+            metrics.edgeExaminations++;
+        }
         Arrays.fill(visited, false);
-        List<List<Integer>> sccs = new ArrayList<>();
-
-        while (!stack.isEmpty()) {
-            int v = stack.pop();
-            if (!visited[v]) {
-                List<Integer> scc = new ArrayList<>();
-                DFSUtil(v, visited, transpose, scc);
-                sccs.add(scc);
+        List<List<Integer>> components = new ArrayList<>();
+        for (int i = finish.size() - 1; i >= 0; i--) {
+            int start = finish.get(i);
+            if (visited[start]) {
+                continue;
             }
-        }
-        return sccs;
-    }
-
-    private void fillOrder(int v, boolean[] visited, Stack<Integer> stack, List<List<Integer>> adj) {
-        visited[v] = true;
-        operationCount++;
-        for (int neighbor : adj.get(v)) {
-            if (!visited[neighbor]) {
-                fillOrder(neighbor, visited, stack, adj);
+            List<Integer> component = new ArrayList<>();
+            visited[start] = true;
+            stack.push(start);
+            while (!stack.isEmpty()) {
+                int vertex = stack.pop();
+                metrics.vertexVisits++;
+                component.add(vertex);
+                for (int next : reverse.get(vertex)) {
+                    metrics.edgeExaminations++;
+                    if (!visited[next]) {
+                        visited[next] = true;
+                        stack.push(next);
+                    }
+                }
             }
+            components.add(component);
         }
-        stack.push(v);
+        return new Result(components, metrics);
     }
-
-    private List<List<Integer>> getTranspose(int vertices, List<List<Integer>> adj) {
-        List<List<Integer>> transpose = new ArrayList<>();
-        for (int i = 0; i < vertices; i++) transpose.add(new ArrayList<>());
-        for (int i = 0; i < vertices; i++) {
-            for (int neighbor : adj.get(i)) {
-                transpose.get(neighbor).add(i);
-                operationCount++;
-            }
-        }
-        return transpose;
-    }
-
-    private void DFSUtil(int v, boolean[] visited, List<List<Integer>> transpose, List<Integer> scc) {
-        visited[v] = true;
-        scc.add(v);
-        operationCount++;
-        for (int neighbor : transpose.get(v)) {
-            if (!visited[neighbor]) {
-                DFSUtil(neighbor, visited, transpose, scc);
-            }
-        }
-    }
-
-    public long getOperationCount() { return operationCount; }
 }

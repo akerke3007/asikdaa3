@@ -1,48 +1,51 @@
 package connectivity;
 
-import java.util.*;
+import graph.Edge;
+import graph.Graph;
+import graph.Metrics;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.List;
 
-public class TopologicalSort {
-    private long operationCount;
+public final class TopologicalSort {
+    public record Result(List<Integer> order, boolean hasCycle, Metrics metrics) {
+        public Result {
+            order = List.copyOf(order);
+        }
+    }
 
-    public List<Integer> sort(int vertices, List<List<Integer>> adj) {
-        operationCount = 0;
-        int[] inDegree = new int[vertices];
-
-        for (int u = 0; u < vertices; u++) {
-            for (int v : adj.get(u)) {
-                inDegree[v]++;
-                operationCount++;
+    public Result compute(Graph graph) {
+        if (!graph.directed()) {
+            throw new IllegalArgumentException("Topological ordering needs a directed graph.");
+        }
+        Metrics metrics = new Metrics();
+        int[] indegree = new int[graph.vertices()];
+        for (Edge edge : graph.edges()) {
+            indegree[edge.destination()]++;
+            metrics.edgeExaminations++;
+        }
+        ArrayDeque<Integer> queue = new ArrayDeque<>();
+        for (int vertex = 0; vertex < graph.vertices(); vertex++) {
+            if (indegree[vertex] == 0) {
+                queue.add(vertex);
+                metrics.queueOffers++;
             }
         }
-
-        Queue<Integer> queue = new LinkedList<>();
-        for (int i = 0; i < vertices; i++) {
-            if (inDegree[i] == 0) {
-                queue.add(i);
-            }
-        }
-
-        List<Integer> topologicalOrder = new ArrayList<>();
+        List<Integer> order = new ArrayList<>();
         while (!queue.isEmpty()) {
-            int u = queue.poll();
-            topologicalOrder.add(u);
-            operationCount++;
-
-            for (int v : adj.get(u)) {
-                operationCount++;
-                if (--inDegree[v] == 0) {
-                    queue.add(v);
+            int vertex = queue.remove();
+            metrics.queuePolls++;
+            metrics.vertexVisits++;
+            order.add(vertex);
+            for (Edge edge : graph.neighbors(vertex)) {
+                metrics.edgeExaminations++;
+                if (--indegree[edge.destination()] == 0) {
+                    queue.add(edge.destination());
+                    metrics.queueOffers++;
                 }
             }
         }
-
-        if (topologicalOrder.size() != vertices) {
-            throw new IllegalStateException("Graph contains a cycle; topological ordering is impossible.");
-        }
-
-        return topologicalOrder;
+        boolean hasCycle = order.size() != graph.vertices();
+        return new Result(hasCycle ? List.of() : order, hasCycle, metrics);
     }
-
-    public long getOperationCount() { return operationCount; }
 }
