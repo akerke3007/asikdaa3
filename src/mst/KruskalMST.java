@@ -2,35 +2,35 @@ package mst;
 
 import dsu.DisjointSetUnion;
 import graph.Edge;
-import java.util.*;
+import graph.Graph;
+import graph.Metrics;
+import java.util.ArrayList;
+import java.util.List;
 
-public class KruskalMST {
-    private double totalWeight;
-    private List<Edge> mstEdges;
-    private long edgeExaminations;
-    private boolean isConnected;
-
-    public void compute(int vertices, List<Edge> edges) {
-        Collections.sort(edges);
-        DisjointSetUnion dsu = new DisjointSetUnion(vertices);
-        mstEdges = new ArrayList<>();
-        totalWeight = 0.0;
-        edgeExaminations = 0;
-
-        for (Edge edge : edges) {
-            edgeExaminations++;
-            if (dsu.union(edge.getSource(), edge.getDestination())) {
-                mstEdges.add(edge);
-                totalWeight += edge.getWeight();
-                if (mstEdges.size() == vertices - 1) break;
+public final class KruskalMST {
+    public MstResult compute(Graph graph) {
+        if (graph.directed()) {
+            throw new IllegalArgumentException("MST needs an undirected graph.");
+        }
+        Metrics metrics = new Metrics();
+        List<Edge> sorted = new ArrayList<>(graph.edges());
+        sorted.sort((first, second) -> {
+            metrics.comparisons++;
+            return Double.compare(first.weight(), second.weight());
+        });
+        DisjointSetUnion dsu = new DisjointSetUnion(graph.vertices(), metrics);
+        List<Edge> selected = new ArrayList<>();
+        double weight = 0;
+        for (Edge edge : sorted) {
+            metrics.edgeExaminations++;
+            if (dsu.union(edge.source(), edge.destination())) {
+                selected.add(edge);
+                weight += edge.weight();
+                if (selected.size() == graph.vertices() - 1) {
+                    break;
+                }
             }
         }
-
-        isConnected = (vertices <= 1) || (mstEdges.size() == vertices - 1);
+        return new MstResult(selected, weight, dsu.components(), metrics);
     }
-
-    public double getTotalWeight() { return totalWeight; }
-    public List<Edge> getMstEdges() { return mstEdges; }
-    public long getEdgeExaminations() { return edgeExaminations; }
-    public boolean isConnected() { return isConnected; }
 }
