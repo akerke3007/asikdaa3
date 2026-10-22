@@ -1,0 +1,18 @@
+PASS: DSU union, size balancing and path compression
+PASS: Known small MST
+PASS: Disconnected minimum spanning forest
+PASS: Multiple MSTs and duplicate weights
+PASS: Single vertex in every algorithm
+PASS: DAG ordering with isolated vertices
+PASS: Directed cycles and self-loops
+PASS: Known SCC partition and membership
+PASS: Shortest distances, paths and unreachable vertices
+PASS: Zero weights, parallel edges and stale queue entries
+PASS: Negative weights and invalid inputs
+PASS: Fixed seeds, exact edge counts and generated graph properties
+PASS: Repeated calls and unchanged input graph
+PASS: Random MSTs against exhaustive search
+PASS: Random SCCs and Dijkstra against Floyd-Warshall
+PASS: Random DAGs with shuffled vertex labels
+PASS: Long directed chain without recursive DFS
+All 17 test groups passed (65665 assertions).

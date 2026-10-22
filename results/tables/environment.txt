@@ -1,0 +1,21 @@
+Recorded at (UTC): 2026-10-22T09:25:15.180037295Z
+Java: 17.0.20+8-1-24.04-Ubuntu
+VM: OpenJDK 64-Bit Server VM
+OS: Linux 6.18.55 amd64
+Available processors: 8
+Maximum heap bytes: 268435456
+CPU: model name	: INTEL(R) XEON(R) PLATINUM 8573C
+Timer: System.nanoTime(); all algorithms are single-threaded
+Warm-up runs per case: 100
+Measured runs per case: 5
+Sources for Dijkstra: 0; weights: integers from 1 to 100 stored as double
+Graph fingerprints (SHA-256 of insertion-order Edge.toString() lines):
+Small Undirected seed=42 4b6683c966b4abc7ddc0ee1d91f0b9598c0b0eeea829279bbc8b8261a762b26d
+Small DAG seed=43 2ab010fba66e2c548f2a6828abe44c12057a81026de98a1ee6cd8f06d8575696
+Small Cyclic seed=44 5c6cde98e7479ff3bc96d82e4486e06beec7ebef59e6afbccb942cec0c2c512b
+Medium Undirected seed=42 97be2a74829eab6aa6b48c0ba349935857907712a865783629c1840112726277
+Medium DAG seed=43 79a13b7abd43834cf298b6d8dfabb5b00e7dd5cf634f9bdb7c0d8c2315e956cc
+Medium Cyclic seed=44 e8aadcdb58c27b0916e37393aa9c91a6fb7d4a2355db879e66a5e59b93314f76
+Large Undirected seed=42 ec2dd969b9cddbb0fb926d0eb6a3cfc92f4d25ae9e1094be3b93c37ba4f71fc5
+Large DAG seed=43 1c61e53afc2f97350830d9c9a4d9c82af7d85baf04d5001ae95eaf00886a27e7
+Large Cyclic seed=44 73fe84bf55177c35555822843220f9f71616c23a2fb4a9aa45d68f951d3b375e
